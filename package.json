@@ -1,0 +1,40 @@
+{
+  "name": "OpenShift-GameServer-Api",
+  "version": "1.0.0",
+  "description": "OpenShift Sample Application",
+  "keywords": [
+    "OpenShift",
+    "Node.js",
+    "application",
+    "openshift"
+  ],
+  "author": {
+    "name": "Jaume Singla",
+    "email": "mail@jaumesingla.es",
+    "url": "http://web.jaumesingla.es/"
+  },
+  "homepage": "http://www.openshift.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openshift/origin-server"
+  },
+
+  "engines": {
+    "node": ">= 0.6.0",
+    "npm": ">= 1.0.0"
+  },
+
+  "dependencies": {
+    "express": "~3.4.4",
+    "emailjs": "0.3.3",
+    "stylus": "0.31.0",
+    "jade": "0.27.7",
+    "mongodb": "1.2.7",
+    "moment" : "1.7.2"
+  },
+  "devDependencies": {},
+  "bundleDependencies": [],
+
+  "private": true,
+  "main": "app.js"
+}
