@@ -34,7 +34,7 @@ app.configure('development', function(){
 	app.use(express.errorHandler());
 });
 
-require('./api/main.js')(app, server);
+require('./MainController.js')(app, server);
 
 //require('./admin/server/router')(app);
 

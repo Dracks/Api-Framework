@@ -8,41 +8,76 @@
 
 var userModel=require('./model.js').User;
 
+var version=0.1;
+
 function Main ( db, version) {
 	"use strict";
 	//var db, profile;
+	if (!(this instanceof Main)){return new Main(db, version);}
 	var self=this;
 
 	self.user=new userModel(db);
 	if (version===null || version ===undefined){
 		self.user.createDatabase();
-	} else if (version>self.user.getVersion()){
+	} else if (version<version){
 		self.user.upgradeDatabase(version);
 	}
 }
 
 Main.prototype.getModel=function (){
 	"use strict";
-	return this.user;
+	return version;
+};
+
+Main.prototype.getVersion=function (){
+	"use strict";
+	return 0.1;
 };
 
 Main.prototype.registerApi=function (app){
 	"use strict";
 	var self=this;
 	app.get('/api/user', function(req, res){
-
+		self.user.validate(req, function(status, object){
+			if (object===null || object===undefined){
+				res.json(404, "User not found");
+			} else {
+				res.json(object);
+			}
+		});
 	});
 
 	app.post('/api/user', function(req, res){
-		var self=this;
+		//var self=this;
 		if (req.headers.token===undefined){
 			// login user
-			self.user.checkLogin(req.body.email, req.body.password, function (status, object){
-
+			self.user.checkLogin(req.body.email, req.body.password, function (status, user){
+				if (user===null || user===undefined){
+					res.json(404, {status:"not found"});
+				} else {
+					self.user.getToken(user, function (status, data){
+						if (data===null || data===undefined){
+							res.json(500, {status:"Token not generated"});
+						} else {
+							res.json(data);
+						}
+					});
+				}
 			});
 		} else {
 			// Renew token
+			self.user.renew(req.headers.token, req.body.renew, function (status, data){
+				if (data===null || data===undefined){
+					res.json(500, status);
+				} else {
+					res.json(data);
+				}
+			});
 		}
+	});
+
+	app.delete('/api/user/token', function(req, res){
+
 	});
 
 	app.put('/api/user', function(req, res){
@@ -63,10 +98,9 @@ Main.prototype.registerApi=function (app){
 					});
 				}
 			});
-
-
 		}
 	});
+
 
 	app.delete('/api/user', function(req, res){
 		res.json(500,{"error":"User not found"});

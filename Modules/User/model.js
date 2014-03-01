@@ -20,6 +20,7 @@ sha1 = function (str) {
 
 function User(db){
 	"use strict";
+	if (!(this instanceof User)){return new User(db);}
 	var self=this;
 	self.db=db;
 	self.profile = self.db.collection('user.profile');
@@ -31,15 +32,15 @@ User.prototype.createDatabase=function (){
 	"use strict";
 	var self=this;
 	self.token.ensureIndex({'login':1}, {unique:true, background:true}, function(e, name){
-
+		console.log(e);
 	});
 
 	self.token.ensureIndex({'renew':1}, {unique:true, background:true}, function(e, name){
-
+		console.log(e);
 	});
 
 	self.profile.ensureIndex({'email':1}, {unique:true, background:true}, function(e, name){
-
+		console.log(e);
 	});
 
 	self.register("admin", "admin@localhost", "admin", function (status, object){
@@ -53,12 +54,7 @@ User.prototype.upgradeDatabase=function (from){
 
 };
 
-User.prototype.getVersion=function (){
-	"use strict";
-	return 0.1;
-};
-
-User.property.checkLogin=function (email, password, callback){
+User.prototype.checkLogin=function (email, password, callback){
 	"use strict";
 	this.profile.findOne({email:email, password:sha1(password)}, function (e,u){
 		if (u===null || u===undefined){
@@ -100,11 +96,11 @@ User.prototype.validate=function (req, callback){
 				console.log(e);
 				callback("error", null);
 			} else {
-				self.user.findOne({_id:data.user},callback);
+				self.profile.findOne({_id:data.user},callback);
 			}
 		});
 	}
-}
+};
 
 User.prototype.getToken=function (user, callback){
 	"use strict";
@@ -112,21 +108,48 @@ User.prototype.getToken=function (user, callback){
 	var generateToken= function (){
 		crypto.randomBytes(48, function(ex, buf) {
 			var token = buf.toString('hex');
-			self.findOne({tokens:token}, function (e, o){
-				if (o===null|| o===undefined){
-					accounts.update({email:user.email}, {$push:{tokens:{login:token, renew:token, created: new Date()}}}, function (e, o){
-						if (e){
-							console.log(e);
-						}
-					});
-					callback(token);
-				} else {
-					generateToken();
-				}
+			self.token.findOne({tokens:token}, function (e, o){
+				crypto.randomBytes(48, function(ex, buf) {
+					var renew=buf.toString('hex');
+					if (o===null|| o===undefined){
+						self.token.insert({login:token, renew:renew, created: new Date(), user:user._id}, function (e, o){
+							if (e){
+								console.log(e);
+							}
+						});
+						callback("ok", {login:token, renew:renew});
+					} else {
+						generateToken();
+					}
+				});
 			});
 		});
 	};
 	generateToken();
+};
+
+User.prototype.renew=function (token, renew, callback){
+	"use strict";
+	var self=this;
+	self.tokens.findOne({login:token}, function (e,o){
+		if (o===null || o===undefined){
+			callback("not found");
+		} else {
+			if (o.renew==renew){
+				self.tokens.remove({_id: o._id}, function (e,o){
+					self.profile.findOne({_id: o.user}, function (e, user){
+						if (user===null || user===undefined){
+							callback("not user found");
+						} else {
+							self.getToken(user, callback);
+						}
+					});
+				});
+			} else {
+				callback("not valid");
+			}
+		}
+	});
 };
 
 
