@@ -152,6 +152,19 @@ User.prototype.renew=function (token, renew, callback){
 	});
 };
 
+User.prototype.close=function (token, renew, callback){
+	var self=this;
+	self.tokens.findOne({login:token}, function (e, o){
+		if (o===null || o===undefined){
+			callback("not found");
+		} else {
+			self.tokens.remove({_id: o._id}, function (e, o){
+				callback("ok");
+			});
+		}
+	});
+};
+
 
 
 exports.User=User;

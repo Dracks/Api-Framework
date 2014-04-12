@@ -34,10 +34,10 @@ Main.prototype.getVersion=function (){
 	return 0.1;
 };
 
-Main.prototype.registerApi=function (app){
+Main.prototype.registerApi=function (app, path){
 	"use strict";
 	var self=this;
-	app.get('/api/user', function(req, res){
+	app.get(path, function(req, res){
 		self.user.validate(req, function(status, object){
 			if (object===null || object===undefined){
 				res.json(404, "User not found");
@@ -47,25 +47,26 @@ Main.prototype.registerApi=function (app){
 		});
 	});
 
-	app.post('/api/user', function(req, res){
-		//var self=this;
-		if (req.headers.token===undefined){
-			// login user
-			self.user.checkLogin(req.body.email, req.body.password, function (status, user){
-				if (user===null || user===undefined){
-					res.json(404, {status:"not found"});
-				} else {
-					self.user.getToken(user, function (status, data){
-						if (data===null || data===undefined){
-							res.json(500, {status:"Token not generated"});
-						} else {
-							res.json(data);
-						}
-					});
-				}
-			});
-		} else {
-			// Renew token
+	app.post(path, function(req, res){
+		// login user
+		self.user.checkLogin(req.body.email, req.body.password, function (status, user){
+			if (user===null || user===undefined){
+				res.json(404, {status:"not found"});
+			} else {
+				self.user.getToken(user, function (status, data){
+					if (data===null || data===undefined){
+						res.json(500, {status:"Token not generated"});
+					} else {
+						res.json(data);
+					}
+				});
+			}
+		});
+	});
+
+	// Renew token
+	app.post(path+"/token", function (req, res){
+		if (req.headers.token!==undefined) {
 			self.user.renew(req.headers.token, req.body.renew, function (status, data){
 				if (data===null || data===undefined){
 					res.json(500, status);
@@ -76,11 +77,19 @@ Main.prototype.registerApi=function (app){
 		}
 	});
 
-	app.delete('/api/user/token', function(req, res){
-
+	app.delete(path+'/token', function(req, res){
+		if (request.header.token!==undefined){
+			self.user.close(request.header.token, function (output){
+				if (output==="ok"){
+					res.json({status: "Session clossed"});
+				} else {
+					res.json(404, status);
+				}
+			});
+		}
 	});
 
-	app.put('/api/user', function(req, res){
+	app.put(path, function(req, res){
 		if (req.headers.token===undefined){
 			// create new user
 			self.user.register(req.body.name, req.body.email, req.body.password, function (status, object){
@@ -101,13 +110,16 @@ Main.prototype.registerApi=function (app){
 		}
 	});
 
-
-	app.delete('/api/user', function(req, res){
+	app.delete(path, function(req, res){
 		res.json(500,{"error":"User not found"});
 	});
 };
 
-Main.prototype.registerAdmin=function (app){
+Main.prototype.registerAdmin=function (app, path){
+
+};
+
+Main.prototype.registerWeb=function (app, path){
 
 };
 
